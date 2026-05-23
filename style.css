@@ -1,0 +1,595 @@
+/* =============================================================================
+   TokenCompare – Dark-Theme Stylesheet
+   ============================================================================= */
+
+/* === GLOBAL RESET & GRUNDEINSTELLUNGEN === */
+body {
+  margin: 0;
+  background: #0f1319;        /* Dunkler Hintergrund */
+  color: #e2e8f0;              /* Helle Textfarbe für Kontrast */
+  font-family: system-ui, sans-serif;
+}
+
+/* Hauptcontainer – zentriert, maximale Breite 1200px */
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 16px;
+}
+
+/* === INPUT-FELD (Suchleiste) === */
+input {
+  width: 100%;
+  background: #0b0f16;         /* Noch dunkler als Body für Tiefe */
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 7px 10px 7px 28px;  /* Links Platz für Such-Icon */
+  font-size: 13px;
+  color: #e2e8f0;
+  outline: none;
+}
+
+input:focus {
+  border-color: #4f46e5;       /* Indigo-Fokusring */
+}
+
+input::placeholder {
+  color: #475569;               /* Dezente Platzhalterfarbe */
+}
+
+/* === LAYOUT-HILFSKLASSEN === */
+.p-14 { padding: 14px; }
+.fixed { position: fixed; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+.relative { position: relative; }
+.z-50 { z-index: 50; }
+.tr { text-align: right; }
+.tc { text-align: center; }
+
+/* =============================================================================
+   HEADER-BEREICH
+   ============================================================================= */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.header-start, .header-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-icon { font-size: 22px; }
+
+/* Logo mit Farbverlauf (Indigo → Violett) */
+.logo-text {
+  font-size: 18px;
+  background: linear-gradient(135deg, #818cf8, #a78bfa, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* LLM-Badge (Pille) */
+.badge-llm {
+  font-size: 10px;
+  background: #151b26;
+  border: 1px solid #1e293b;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #64748b;
+}
+
+/* Letztes Update-Datum */
+.status-text { font-size: 11px; color: #475569; }
+
+/* =============================================================================
+   SUCHLEISTE & SORTIER-CHIPS
+   ============================================================================= */
+.search-section { margin-bottom: 10px; }
+
+/* Chip-Reihe (Sortierbuttons) */
+.chips-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+/* Pfeil-Indikator für aktive Sortierung */
+.sort-arrow { color: #818cf8; font-size: 10px; }
+
+/* =============================================================================
+   TABELLE (Hauptbereich)
+   ============================================================================= */
+
+/* Tabellen-Container mit fester Höhe und Scrollen */
+.table-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 68vh;                /* 68 % der Viewport-Höhe */
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  background: #131821;
+}
+
+/* Scrollbarer Tabellenkörper */
+.table-scroll {
+  flex: 1;
+  overflow-y: auto;
+  border-radius: 8px 8px 0 0;
+}
+
+/* Tabellen-Grundstil */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+/* Tabellenkopf – aufrecht, dezent */
+th {
+  text-align: left;
+  padding: 8px 10px;
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #1e293b;
+  cursor: pointer;
+}
+
+th:hover { color: #94a3b8; }
+
+/* Tabellenzellen */
+td { padding: 7px 10px; border-bottom: 1px solid #1e293b; color: #cbd5e1; }
+
+/* Zeilen-Hover (sehr subtil) */
+tr:hover td { background: rgba(99, 102, 241, 0.03); }
+
+/* Sticky-Header beim Scrollen (fixiert oben) */
+.th-sticky {
+  position: sticky;
+  top: 0;
+  background: #131821;
+  z-index: 2;
+}
+
+/* Zentrierte Sticky-Spalte (Stern) */
+.th-sticky-center {
+  position: sticky;
+  top: 0;
+  background: #131821;
+  z-index: 2;
+  width: 28px;
+  text-align: center;
+}
+
+/* Rechtsbündige Sticky-Spalte (Compare-Button) */
+.th-sticky-right {
+  position: sticky;
+  top: 0;
+  background: #131821;
+  z-index: 2;
+  width: 40px;
+  text-align: right;
+}
+
+.row-click { cursor: pointer; }
+.cell-center { text-align: center; }
+
+/* === STERN (Favorit) === */
+.star { cursor: pointer; font-size: 16px; }
+.star-on { color: #facc15; }   /* Aktiv (gelb) */
+.star-off { color: #334155; }  /* Inaktiv (dunkelgrau) */
+
+.model-name { font-weight: 500; }
+
+.model-tags {
+  display: flex;
+  gap: 3px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+/* Anbieter-Zelle: Favicon + Name */
+.provider-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+}
+
+.stars-empty { color: #2d3748; font-size: 11px; }
+
+/* === PREIS-DARSTELLUNG === */
+
+/* Preis-Badge (Monospace, abgerundet) */
+.price {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+/* Kontext-Wert (Monospace, dezenter) */
+.price-value {
+  font-family: monospace;
+  font-size: 12px;
+  color: #475569;
+}
+
+/* Preis-Farbklassen: p1 = günstig (grün) → p4 = teuer (rot) */
+.p1 { background: rgba(16, 185, 129, 0.1); color: #34d399; }
+.p2 { background: rgba(251, 191, 36, 0.1); color: #fbbf24; }
+.p3 { background: rgba(251, 146, 60, 0.1); color: #fb923c; }
+.p4 { background: rgba(248, 113, 113, 0.1); color: #f87171; }
+
+/* Compare-Button in der Tabelle */
+.compare-btn {
+  padding: 3px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+/* =============================================================================
+   TABELLEN-FUSSZEILE
+   ============================================================================= */
+.footer-bar {
+  padding: 6px 10px;
+  border-top: 1px solid #1e293b;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #475569;
+  background: #131821;
+  border-radius: 0 0 8px 8px;
+}
+
+/* Link zum Öffnen des Compare-Modals */
+.compare-link {
+  color: #818cf8;
+  cursor: pointer;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* =============================================================================
+   UMSCHALT-CHIPS (Mischungsmodus & Währung)
+   ============================================================================= */
+.toggle-chip {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid #3730a3;
+  background: #1c1733;
+  color: #a78bfa;
+}
+.toggle-chip-curr {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 600;
+  border: 1px solid #065f46;
+  background: #0a2e22;
+  color: #34d399;
+}
+
+/* =============================================================================
+   ALLGEMEINE BUTTONS
+   ============================================================================= */
+.btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  border: 1px solid #1e293b;
+  background: #151b26;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.btn:hover { background: #1c2534; color: #cbd5e1; }
+
+/* =============================================================================
+   SORTIER-/FILTER-CHIPS
+   ============================================================================= */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: #141b26;
+  color: #64748b;
+  border-color: #1e293b;
+}
+
+.chip:hover { background: #1c2534; color: #94a3b8; }
+.chip-a { background: #1c1733; color: #a78bfa; border-color: #3730a3; }   /* Aktiver Sortier-Chip */
+.chip-f { background: #2e2a10; color: #facc15; border-color: #4a4418; }   /* Favoriten-Filter aktiv */
+
+/* =============================================================================
+   BADGES (Modalitäts-Tags in der Tabelle)
+   ============================================================================= */
+.badge {
+  display: inline-flex;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.badge-t { background: #18202e; color: #94a3b8; }   /* Text */
+.badge-m { background: #1c1733; color: #a78bfa; }   /* Multimodal / Vision / etc. */
+.badge-f { background: #2e2a10; color: #facc15; }   /* Favorit */
+
+/* =============================================================================
+   PROVIDER-FARBDOT (Fallback wenn kein Favicon verfügbar)
+   ============================================================================= */
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* =============================================================================
+   SUCH-ICON (absolut positioniert im Input-Feld)
+   ============================================================================= */
+.srch { position: relative; }
+
+.srch svg {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: #475569;
+}
+
+/* =============================================================================
+   MODAL-GRUNDSTIL (Detail + Compare)
+   ============================================================================= */
+
+/* Halbdurchsichtiger Hintergrund mit Blur */
+.modal-overlay { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); }
+
+/* Modal-Container (dunkle Karte) */
+.modal-box { background: #131821; border: 1px solid #1e293b; border-radius: 10px; }
+
+/* Zentriert das Modal auf dem Bildschirm */
+.modal-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+/* === DETAIL-MODAL === */
+
+/* Modal-Header (sticky beim Scrollen) */
+.modal-header {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid #1e293b;
+  background: #131821;
+}
+
+/* Schlanker Header für Compare-Modal */
+.modal-header-slim {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e293b;
+  background: #131821;
+}
+
+/* Schließen-Button im Modal */
+.modal-close-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: #1e293b;
+  color: #64748b;
+  border: none;
+  cursor: pointer;
+}
+
+/* 2×2-Raster für Basis-Details (Anbieter, Modus, Kontext, Output) */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+/* Einzelnes Detail-Kästchen */
+.detail-item {
+  background: #0b0f16;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+/* Detail-Kästchen über volle Breite (Preise, Beschreibung) */
+.detail-item-wide {
+  background: #0b0f16;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.detail-label {
+  font-size: 9px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.detail-value {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* 3-Spalten-Raster für Input/Output/Cached-Preise */
+.price-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  text-align: center;
+}
+
+.price-label { font-size: 10px; color: #475569; }
+.price-number { font-size: 16px; font-weight: 700; }
+
+/* Beschreibungstext */
+.desc-text {
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Aktions-Button-Reihe (Favorit / Vergleichen) */
+.modal-actions { display: flex; gap: 6px; }
+
+.action-btn {
+  flex: 1;
+  padding: 7px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid;
+}
+
+/* =============================================================================
+   COMPARE-MODAL (Side-by-Side-Vergleich)
+   ============================================================================= */
+
+/* Badge mit Anzahl der verglichenen Modelle */
+.compare-badge {
+  font-size: 10px;
+  background: #1c1733;
+  color: #a78bfa;
+  padding: 1px 8px;
+  border-radius: 999px;
+}
+
+/* Horizontal scrollbare Tabellen-Umgebung */
+.compare-table-wrap { padding: 14px; overflow-x: auto; }
+
+.compare-table { width: 100%; font-size: 12px; }
+
+/* Erste Spalte (Eigenschaftsname) */
+.compare-th { width: 110px; border: none; font-size: 9px; }
+
+/* Modell-Spalten im Compare-Header */
+.compare-th-model { border: none; min-width: 120px; }
+
+/* Zellen in der ersten Spalte (Eigenschaften) */
+.compare-label-cell {
+  padding: 6px 10px;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #141b24;
+}
+
+/* Zellen in den Modell-Spalten */
+.compare-value-cell {
+  padding: 6px 8px;
+  border-bottom: 1px solid #141b24;
+}
+
+/* "Günstigster"-Label (grün, hervorgehoben) */
+.compare-best-label {
+  font-size: 9px;
+  color: #10b981;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Beschreibungs-Zelle in der ersten Spalte */
+.compare-desc-label {
+  padding: 6px 10px;
+  font-weight: 600;
+  color: #475569;
+  border-bottom: 1px solid #141b24;
+  vertical-align: top;
+}
+
+/* Beschreibungs-Zelle in den Modell-Spalten */
+.compare-desc-value {
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+  border-bottom: 1px solid #141b24;
+  vertical-align: top;
+}
+
+/* =============================================================================
+   FEHLER-BANNER
+   ============================================================================= */
+.error-banner {
+  padding: 10px;
+  background: #2e1010;         /* Rötlich */
+  border: 1px solid #4a1818;
+  border-radius: 6px;
+  color: #f87171;
+  font-size: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.error-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* =============================================================================
+   LADE-SKELETON & LEERER ZUSTAND
+   ============================================================================= */
+
+/* Während des API-Ladevorgangs (initial) */
+.skeleton {
+  padding: 20px;
+  text-align: center;
+  color: #475569;
+  font-size: 14px;
+}
+
+/* Wenn keine Modelle die Filterkriterien erfüllen */
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  color: #475569;
+}
+
+/* =============================================================================
+   RESPONSIVE: Mobil ≤ 640px → ausgeblendete Spalten
+   ============================================================================= */
+@media (max-width: 640px) {
+  .hm { display: none !important; }
+}

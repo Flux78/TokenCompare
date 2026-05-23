@@ -1,6 +1,9 @@
 # Prompt: TokenCompare – LLM Token-Preis-Vergleich
 
-Erstelle eine Single-Page-HTML-Anwendung (eine Datei `index.html`) mit Vue 3 (CDN) und reinem CSS (kein Tailwind), die Live-Tokenpreise von der OpenRouter API anzeigt, sortiert, favorisiert, im Detail anzeigt und vergleicht.
+> **Hinweis:** Dies ist der ursprüngliche Entwicklungs-Prompt, der zur Generierung der Anwendung verwendet wurde.
+> Die aktuelle Dokumentation findest du in [`README.md`](README.md) und [`documentation.md`](documentation.md).
+
+Erstelle eine Single-Page-HTML-Anwendung (3 Dateien: `index.html`, `style.css`, `app.js`) mit Vue 3 (CDN) und reinem CSS (kein Tailwind), die Live-Tokenpreise von der OpenRouter API anzeigt, sortiert, favorisiert, im Detail anzeigt und vergleicht.
 
 ## Datenquelle
 
@@ -81,7 +84,7 @@ Anzeige: ★×n + ☆×(5−n), Farbverlauf: `['#475569','#a78bfa','#818cf8','#f
 ## CSS & Styling
 
 - **Dark Theme**: `background:#0f1319`, Text `#e2e8f0`, Tabellen-Hintergrund `#131821`
-- **Kein Tailwind**: Alle Styles in inline `<style>` und inline `style=""`
+- **Kein Tailwind**: Alle Styles in externer `style.css` und dynamischen `:style`-Bindings
 - **Responsive**: `@media(max-width:640px){ .hm { display:none!important; } }`
 - **Sticky Header**: `position:sticky;top:0;background:#131821;z-index:2` für `<th>`
 - **Klassen**:
@@ -96,8 +99,13 @@ Anzeige: ★×n + ☆×(5−n), Farbverlauf: `['#475569','#a78bfa','#818cf8','#f
   - `.dot` für farbigen Provider-Dot
   - `.srch` für Suchcontainer mit Icon
   - `.mo` für Modal-Overlay (backdrop-filter), `.mb` für Modal-Box
+  - `.header`, `.table-wrap`, `.footer-bar` – Layout-Komponenten
+  - `.th-sticky`, `.th-sticky-center`, `.th-sticky-right` – Tabellenkopf
+  - `.modal-header`, `.modal-header-slim`, `.modal-center` – Modalköpfe
+  - `.detail-item`, `.detail-item-wide`, `.detail-grid` – Detail-Modal-Grid
+  - `.error-banner`, `.skeleton`, `.empty-state` – Statusanzeigen
 
-## JavaScript (Vue 3 Composition API)
+## JavaScript (Vue 3 Composition API, `app.js`)
 
 Verwende `createApp` mit `setup()`:
 
@@ -132,6 +140,7 @@ Verwende `createApp` mit `setup()`:
 1. **Niemals `fetch` als Funktionsname verwenden** – die globale `fetch`-Funktion darf nicht überschattet werden. API-Call: `window.fetch()`
 2. **Alle Template-Funktionen 1:1 im `return`** – kein Aliasing wie `foo:bar`, der Name im Template muss dem Namen in `setup()` entsprechen
 3. **Preise sind Strings** – erst `parseFloat`, dann mit 1e6 multiplizieren
-4. **Kein Tailwind** – ausschließlich reines CSS + inline styles
+4. **Kein Tailwind** – reines CSS in `style.css`, dynamische Styles via `:style`-Bindings
 5. **Suche in eigener Zeile** – nicht in derselben Zeile wie Chips/Buttons
 6. **Tabellen-Höhe** – 68vh Container mit overflow-y:auto, Header sticky
+7. **Datei-Aufteilung** – `index.html` (Template), `style.css` (Styles), `app.js` (Logik)

@@ -4,19 +4,25 @@ Vergleicht LLM-Tokenpreise von der [OpenRouter API](https://openrouter.ai/docs/a
 
 ## Architektur
 
-Single-Page-HTML-Anwendung (339 Zeilen) – **eine einzige Datei `index.html`** ohne Build-Tools, Bundler oder npm.
+Single-Page-HTML-Anwendung – **3 Dateien** ohne Build-Tools, Bundler oder npm:
+
+| Datei | Zeilen | Aufgabe |
+|---|---|---|
+| `index.html` | 242 | Vue-Template, Komponenten-Markup |
+| `style.css` | 595 | Dark-Theme-Styling, Layout-Klassen, responsiv |
+| `app.js` | 290 | Vue 3 Logik (Composition API) |
 
 | Technologie | Verwendung |
 |---|---|
 | **Vue 3** (CDN: `unpkg.com/vue@3`) | Reaktivität, Templates, Computed Properties |
-| **Reines CSS** | Dark-Theme-Styling, responsiv |
+| **Reines CSS** (`style.css`) | Dark-Theme-Styling, Komponenten-Klassen |
 | **localStorage** | Favoriten-Persistenz (`tc_fav`) |
 | **OpenRouter API** | Datenquelle (`GET /api/v1/models`) |
 
 ## Features
 
-- **Live-Daten** von OpenRouter (358+ Modelle) mit Update-Button
-- **Sortierbare Tabelle**: Name, Anbieter, Code-Rating, Input/Output/Cached-Preise, Kontext
+- **Live-Daten** von OpenRouter (350+ Modelle) mit Update-Button
+- **Sortierbare Tabelle**: Name, Anbieter, Code-Rating, Input/Output/Cached/Effektiv-Preise, Kontext
 - **Suche** über Modellname, ID oder Anbieter (eigene Zeile, keine Überlappung)
 - **Favoriten**: Stern-Markierung persistent in localStorage, Favoriten immer oben
 - **Favoriten-Filter**: Nur Favoriten anzeigen
@@ -25,6 +31,8 @@ Single-Page-HTML-Anwendung (339 Zeilen) – **eine einzige Datei `index.html`** 
 - **Detail-Modal**: Klick auf Zeile zeigt Anbieter, Modus, Kontext, Max Output, Preise, Coding-Rating, Beschreibung
 - **Compare-Modal**: Bis zu 5 Modelle vergleichen (Preise, Kontext, Architektur, etc.), günstigster Preis grün markiert
 - **Responsive**: Auf schmalen Bildschirmen werden Anbieter-, Cached- und Kontext-Spalten ausgeblendet
+- **Effektiv-Preis**: Gewichteter Mischpreis aus Input/Output/Cached (umstellbar 70/30 Chat oder 60/25/15 Cache) als zusätzliche Tabellenspalte und im Detail-Modal
+- **Währungsumschaltung** USD/EUR: Wechselkurs via `open.er-api.com`, alle Preise werden umgerechnet
 - **Lade-Skeleton, Empty-State, Error-Banner**
 
 ## Pricing-Konvertierung
@@ -75,3 +83,17 @@ Relevante Felder aus der API-Antwort:
 - **Tabelle in 68vh-Container**: Haupttabelle in einem Bereich mit `height:68vh` und `overflow-y:auto`, Header sticky, Footer-Leiste fest am unteren Rand
 - **Favoriten immer oben**: Zweistufige Sortierung (Favoriten zuerst, dann gewählte Sortierung)
 - **Compare-Modal**: Nur bei `>=2` ausgewählten Modellen sichtbar, max. 5 Modelle
+- **Preisformatierung**: `fm()` nutzt `toFixed(4)` mit Abschneiden überflüssiger Nullen, z. B. `$0.1500` → `$0.15`
+- **Datei-Aufteilung**: `index.html` enthält nur das Template, `style.css` alle Styles, `app.js` die Vue-Logik – geladen über `<link>` bzw. `<script src="...">`
+- **Effektiv-Preis**: `eff(m)` berechnet gewichteten Mischpreis nach Modus (70% Input + 30% Output oder 60% Input + 25% Output + 15% Cached), umschaltbar per Knopf im Header
+
+## Sicherheit
+
+- **CSP** (Content Security Policy): Restriktives Meta-Tag mit `default-src 'none'` und gezielt erlaubten Quellen:
+  - `script-src`: `'self'`, `https://unpkg.com`, `'unsafe-eval'` (erforderlich für Vue 3 Template-Compiler)
+  - `style-src`: `'self'`, `'unsafe-inline'`
+  - `img-src`: `'self'`, `https://www.google.com`, `https://*.gstatic.com` (Google Favicons redirecten auf `t2.gstatic.com`)
+  - `connect-src`: `https://openrouter.ai`, `https://open.er-api.com`
+  - `frame-ancestors 'none'` verhindert Clickjacking
+- **Kein `v-html`**: Alle API-Daten werden durch Vue's Text-Interpolation (`{{ }}`) sicher escaped
+- **`rel="noopener noreferrer"`**: Alle externen Links mit `target="_blank"` geschützt

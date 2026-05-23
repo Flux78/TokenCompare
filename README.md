@@ -2,6 +2,10 @@
 
 **Live LLM-Tokenpreise vergleichen** – Eine blitzschnelle Single-Page-Anwendung, die Modelle und Preise von der [OpenRouter API](https://openrouter.ai/) in einer sortierbaren, durchsuchbaren Tabelle darstellt.
 
+<p align="center">
+  <img src="screenshot.png" alt="TokenCompare Screenshot" width="700">
+</p>
+
 ## Features
 
 - **Live-Daten** von OpenRouter (350+ Modelle) mit einem Klick aktualisierbar

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TokenCompare</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<style>
+body { margin:0; background:#0f1319; color:#e2e8f0; font-family:system-ui,sans-serif; }
+#app { max-width:1200px; margin:0 auto; padding:12px 16px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; padding:8px 10px; color:#64748b; font-size:11px; text-transform:uppercase; border-bottom:2px solid #1e293b; cursor:pointer; }
+th:hover { color:#94a3b8; }
+td { padding:7px 10px; border-bottom:1px solid #1e293b; color:#cbd5e1; }
+tr:hover td { background:rgba(99,102,241,.03); }
+.tr { text-align:right; }
+.tc { text-align:center; }
+.price { display:inline-block; padding:1px 6px; border-radius:4px; font-weight:600; font-family:monospace; }
+.p1 { background:rgba(16,185,129,.1); color:#34d399; }
+.p2 { background:rgba(251,191,36,.1); color:#fbbf24; }
+.p3 { background:rgba(251,146,60,.1); color:#fb923c; }
+.p4 { background:rgba(248,113,113,.1); color:#f87171; }
+.star { cursor:pointer; font-size:16px; }
+.star-on { color:#facc15; }
+.star-off { color:#334155; }
+.btn { padding:4px 10px; border-radius:6px; font-size:11px; border:1px solid #1e293b; background:#151b26; color:#94a3b8; cursor:pointer; }
+.btn:hover { background:#1c2534; color:#cbd5e1; }
+input { width:100%; background:#0b0f16; border:1px solid #1e293b; border-radius:6px; padding:7px 10px 7px 28px; font-size:13px; color:#e2e8f0; outline:none; }
+input:focus { border-color:#4f46e5; }
+input::placeholder { color:#475569; }
+.chip { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:12px;cursor:pointer;border:1px solid transparent;background:#141b26;color:#64748b;border-color:#1e293b; }
+.chip:hover { background:#1c2534;color:#94a3b8; }
+.chip-a { background:#1c1733;color:#a78bfa;border-color:#3730a3; }
+.chip-f { background:#2e2a10;color:#facc15;border-color:#4a4418; }
+.badge { display:inline-flex;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:600; }
+.badge-t { background:#18202e;color:#94a3b8; }
+.badge-m { background:#1c1733;color:#a78bfa; }
+.badge-f { background:#2e2a10;color:#facc15; }
+.dot { width:6px;height:6px;border-radius:50%;display:inline-block; }
+.srch { position:relative; }
+.srch svg { position:absolute;left:8px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:#475569; }
+@media(max-width:640px){ .hm { display:none!important; } }
+.mo { background:rgba(0,0,0,.5);backdrop-filter:blur(4px); }
+.mb { background:#131821;border:1px solid #1e293b;border-radius:10px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span style="font-size:22px;">⚡</span>
+    <b style="font-size:18px;background:linear-gradient(135deg,#818cf8,#a78bfa,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">TokenCompare</b>
+    <span style="font-size:10px;background:#151b26;border:1px solid #1e293b;padding:2px 8px;border-radius:999px;color:#64748b;">LLM Preise</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span v-if="items.length" style="font-size:11px;color:#475569;">🟢 {{ updated }}</span>
+    <button @click="load" :disabled="busy" class="btn">{{ busy?'…':'⟳ Update' }}</button>
+  </div>
+</div>
+
+<div style="margin-bottom:10px;">
+  <div class="srch">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+    <input v-model="q" placeholder="Suche Modell / Anbieter…">
+  </div>
+  <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">
+    <button v-for="o in sorts" :key="o.k" @click="srt(o.k)" :class="['chip', sk===o.k?'chip-a':'']">
+      <span v-if="sk===o.k" style="color:#818cf8;font-size:10px;">{{ up?'↑':'↓' }}</span>{{ o.l }}
+    </button>
+    <button @click="favf=!favf" :class="['chip', favf?'chip-f':'']">★ {{ favs.length }}</button>
+  </div>
+</div>
+
+<div v-if="err" style="padding:10px;background:#2e1010;border:1px solid #4a1818;border-radius:6px;color:#f87171;font-size:12px;margin-bottom:10px;display:flex;gap:8px;">
+  <span>⚠ {{ err }}</span>
+  <button @click="err=null" style="margin-left:auto;background:none;border:none;color:inherit;cursor:pointer;">&times;</button>
+</div>
+
+<div v-if="busy && !items.length" style="padding:20px;text-align:center;color:#475569;font-size:14px;">Lade Modelle…</div>
+
+<div v-else-if="!busy && !rows.length" style="padding:40px;text-align:center;color:#475569;">
+  <p>Keine Treffer</p>
+  <button @click="q='';favf=false" class="btn" style="margin-top:8px;">Reset</button>
+</div>
+
+<div v-if="rows.length" style="display:flex;flex-direction:column;height:68vh;border:1px solid #1e293b;border-radius:8px;background:#131821;">
+  <div style="flex:1;overflow-y:auto;border-radius:8px 8px 0 0;">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px;text-align:center;position:sticky;top:0;background:#131821;z-index:2;" @click="srt('name')">#</th>
+          <th style="position:sticky;top:0;background:#131821;z-index:2;" @click="srt('name')">Modell <span v-if="sk==='name'" style="color:#818cf8;">{{ up?'↑':'↓' }}</span></th>
+          <th style="position:sticky;top:0;background:#131821;z-index:2;" @click="srt('prov')" class="hm">Anbieter <span v-if="sk==='prov'" style="color:#818cf8;">{{ up?'↑':'↓' }}</span></th>
+          <th style="position:sticky;top:0;background:#131821;z-index:2;" @click="srt('code')" class="tc">Code <span v-if="sk==='code'" style="color:#818cf8;">{{ up?'↑':'↓' }}</span></th>
+          <th style="position:sticky;top:0;background:#131821;z-index:2;" @click="srt('input')" class="tr">Input <span style="font-size:9px;opacity:.5;">/1M</span><span v-if="sk==='input'" style="color:#818cf8;font-size:10px;"> {{ up?'↑':'↓' }}</span></th>
+          <th style="position:sticky;top:0;background:#131821;z-index:2;" @click="srt('output')" class="tr">Output <span style="font-size:9px;opacity:.5;">/1M</span><span v-if="sk==='output'" style="color:#818cf8;font-size:10px;"> {{ up?'↑':'↓' }}</span></th>
+          <th style="position:sticky;top:0;background:#131821;z-index:2;" @click="srt('cached')" class="tr hm">Cached <span style="font-size:9px;opacity:.5;">/1M</span><span v-if="sk==='cached'" style="color:#818cf8;font-size:10px;"> {{ up?'↑':'↓' }}</span></th>
+          <th style="position:sticky;top:0;background:#131821;z-index:2;" @click="srt('ctx')" class="tr hm">Kontext <span v-if="sk==='ctx'" style="color:#818cf8;font-size:10px;">{{ up?'↑':'↓' }}</span></th>
+          <th style="width:40px;text-align:right;position:sticky;top:0;background:#131821;z-index:2;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="m in rows" :key="m.id" @click="det(m)" style="cursor:pointer;">
+          <td style="text-align:center;" @click.stop>
+            <span @click="fav(m)" class="star" :class="has(m)?'star-on':'star-off'">{{ has(m)?'★':'☆' }}</span>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span>{{ icn(m) }}</span>
+              <div>
+                <b style="font-weight:500;">{{ m.name }}</b>
+                <div style="display:flex;gap:3px;margin-top:2px;flex-wrap:wrap;">
+                  <span v-for="t in tags(m)" :key="t" class="badge" :class="t==='Text'?'badge-t':'badge-m'">{{ t }}</span>
+                  <span v-if="has(m)" class="badge badge-f">★</span>
+                </div>
+              </div>
+            </div>
+          </td>
+          <td class="hm"><span style="display:flex;align-items:center;gap:5px;color:#64748b;"><span class="dot" :style="'background:'+pc(prov(m))"></span>{{ prov(m) }}</span></td>
+          <td class="tc">
+            <span v-if="cd(m)" :style="{color:['#475569','#a78bfa','#818cf8','#f59e0b','#f97316'][cd(m)-1],fontSize:'14px',cursor:'default'}" :title="cd(m)+'/5'">{{ '★'.repeat(cd(m)) }}</span>
+            <span v-else style="color:#2d3748;fontSize:11px;">—</span>
+          </td>
+          <td class="tr"><span class="price" :class="cls(pr(m,'prompt'))">{{ fm(pr(m,'prompt')) }}</span></td>
+          <td class="tr"><span class="price" :class="cls(pr(m,'completion'))">{{ fm(pr(m,'completion')) }}</span></td>
+          <td class="tr hm"><span v-if="pr(m,'cached')" class="price" :class="cls(pr(m,'cached'))">{{ fm(pr(m,'cached')) }}</span><span v-else style="color:#334155;">—</span></td>
+          <td class="tr hm"><span style="font-family:monospace;font-size:12px;color:#475569;">{{ m.context_length?n(m.context_length):'—' }}</span></td>
+          <td class="tr" @click.stop>
+            <button @click="cmp(m)"
+              style="padding:3px 7px;border-radius:4px;font-size:11px;cursor:pointer;font-weight:500;"
+              :style="cs.has(m.id)?{background:'rgba(99,102,241,.1)',color:'#818cf8',border:'1px solid rgba(99,102,241,.3)'}:{background:'transparent',color:'#64748b',border:'1px solid #1e293b'}">
+              {{ cs.has(m.id)?'✓':'+' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div style="padding:6px 10px;border-top:1px solid #1e293b;display:flex;justify-content:space-between;font-size:11px;color:#475569;background:#131821;border-radius:0 0 8px 8px;">
+    <span>{{ show.length }} Modelle · {{ items.length }} gesamt · {{ favs.length }} ★</span>
+    <a v-if="cl.length>=2" @click="sc=true" style="color:#818cf8;cursor:pointer;font-weight:600;text-decoration:none;">{{ cl.length }} vergleichen →</a>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<Teleport to="body">
+  <div v-if="det" class="fixed inset-0 z-50" style="display:flex;align-items:center;justify-content:center;padding:16px;" @click.self="det=null">
+    <div class="mo fixed inset-0"></div>
+    <div class="mb relative" style="width:100%;max-width:380px;max-height:80vh;overflow-y:auto;">
+      <div style="position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #1e293b;background:#131821;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span>{{ icn(det) }}</span>
+          <b style="font-size:14px;">{{ det.name }}</b>
+        </div>
+        <button @click="det=null" style="width:24px;height:24px;border-radius:4px;background:#1e293b;color:#64748b;border:none;cursor:pointer;">&times;</button>
+      </div>
+      <div style="padding:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+          <div style="background:#0b0f16;border:1px solid #1e293b;border-radius:6px;padding:8px;"><div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;">Anbieter</div><div style="font-weight:600;font-size:13px;">{{ prov(det) }}</div></div>
+          <div style="background:#0b0f16;border:1px solid #1e293b;border-radius:6px;padding:8px;"><div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;">Modus</div><div style="font-weight:600;font-size:13px;">{{ tags(det)[0]||'—' }}</div></div>
+          <div style="background:#0b0f16;border:1px solid #1e293b;border-radius:6px;padding:8px;"><div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;">Kontext</div><div style="font-weight:600;font-size:13px;">{{ det.context_length?n(det.context_length)+' T':'—' }}</div></div>
+          <div style="background:#0b0f16;border:1px solid #1e293b;border-radius:6px;padding:8px;"><div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;">Max Output</div><div style="font-weight:600;font-size:13px;">{{ det.top_provider?.max_completion_tokens?n(det.top_provider.max_completion_tokens)+' T':'—' }}</div></div>
+        </div>
+        <div style="background:#0b0f16;border:1px solid #1e293b;border-radius:6px;padding:8px;margin-top:4px;"><div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;">Coding</div><div style="font-weight:600;font-size:16px;">{{ '★'.repeat(cd(det))+'☆'.repeat(5-cd(det)) }}</div></div>
+        <div style="background:#0b0f16;border:1px solid #1e293b;border-radius:6px;padding:10px;margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px;">Preise / 1M Tokens</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;text-align:center;">
+            <div><div style="font-size:10px;color:#475569;">Input</div><div style="font-size:16px;font-weight:700;" :class="pr(det,'prompt')?'text-emerald-400':'text-[#334155]'">{{ fm(pr(det,'prompt')) }}</div></div>
+            <div><div style="font-size:10px;color:#475569;">Output</div><div style="font-size:16px;font-weight:700;" :class="pr(det,'completion')?'text-amber-400':'text-[#334155]'">{{ fm(pr(det,'completion')) }}</div></div>
+            <div><div style="font-size:10px;color:#475569;">Cached</div><div style="font-size:16px;font-weight:700;" :class="pr(det,'cached')?'text-cyan-400':'text-[#334155]'">{{ pr(det,'cached')?fm(pr(det,'cached')):'—' }}</div></div>
+          </div>
+        </div>
+        <div v-if="det.description" style="background:#0b0f16;border:1px solid #1e293b;border-radius:6px;padding:10px;margin-bottom:10px;">
+          <div style="font-size:9px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:4px;">Beschreibung</div>
+          <p style="font-size:12px;color:#94a3b8;line-height:1.5;margin:0;">{{ det.description }}</p>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button @click="fav(det);det=null" style="flex:1;padding:7px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;" :style="has(det)?{background:'#2e2a10',color:'#facc15',borderColor:'#4a4418'}:{background:'#1e293b',color:'#94a3b8',borderColor:'#1e293b'}">{{ has(det)?'★ Entfernen':'☆ Favorit' }}</button>
+          <button @click="cmp(det);det=null" style="flex:1;padding:7px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid;" :style="cs.has(det.id)?{background:'rgba(99,102,241,.1)',color:'#818cf8',borderColor:'rgba(99,102,241,.3)'}:{background:'#1e293b',color:'#94a3b8',borderColor:'#1e293b'}">{{ cs.has(det.id)?'✓ Vergleich':'+ Vergleichen' }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</Teleport>
+<Teleport to="body">
+  <div v-if="sc&&cl.length>=2" class="fixed inset-0 z-50" style="display:flex;align-items:center;justify-content:center;padding:16px;" @click.self="sc=false">
+    <div class="mo fixed inset-0"></div>
+    <div class="mb relative" style="width:100%;max-width:800px;max-height:80vh;overflow-y:auto;">
+      <div style="position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #1e293b;background:#131821;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <b style="font-size:14px;">📊 Vergleich</b>
+          <span style="font-size:10px;background:#1c1733;color:#a78bfa;padding:1px 8px;border-radius:999px;">{{ cl.length }}</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button @click="cl=[];sc=false" class="btn" style="font-size:10px;">Reset</button>
+          <button @click="sc=false" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.25);cursor:pointer;">Schließen</button>
+        </div>
+      </div>
+      <div style="padding:14px;overflow-x:auto;">
+        <table style="width:100%;font-size:12px;">
+          <thead><tr>
+            <th style="width:110px;border:none;font-size:9px;">Eigenschaft</th>
+            <th v-for="m in cl" :key="m.id" style="border:none;min-width:120px;">
+              <div style="display:flex;align-items:center;gap:4px;">{{ icn(m) }}<b>{{ m.name }}</b><button @click="rc(m)" style="margin-left:auto;width:14px;height:14px;border-radius:3px;background:#1e293b;color:#475569;border:none;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;">&times;</button></div>
+            </th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="row in cr" :key="row.k">
+              <td style="padding:6px 10px;font-weight:600;color:#475569;border-bottom:1px solid #141b24;">{{ row.i }} {{ row.l }}</td>
+              <td v-for="(c,ci) in row.c" :key="ci" style="padding:6px 8px;border-bottom:1px solid #141b24;" :class="best(row.k,ci)?'bg-[#0a1a12]':''">
+                <div :class="best(row.k,ci)?'text-emerald-400 font-bold':'text-[#cbd5e1]'">{{ c }}</div>
+                <div v-if="best(row.k,ci)&&c!=='—'" style="font-size:9px;color:#10b981;font-weight:700;text-transform:uppercase;">Günstigster</div>
+              </td>
+            </tr>
+            <tr v-if="cl.some(m=>m.description)">
+              <td style="padding:6px 10px;font-weight:600;color:#475569;border-bottom:1px solid #141b24;vertical-align:top;">📄 Beschreibung</td>
+              <td v-for="m in cl" :key="m.id" style="padding:6px 8px;font-size:11px;color:#64748b;line-height:1.4;border-bottom:1px solid #141b24;vertical-align:top;">{{ m.description||'—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</Teleport>
+
+</div>
+
+<script>
+const { createApp, ref, computed, watch, onMounted } = Vue;
+createApp({
+  setup() {
+    const items = ref([]);
+    const busy = ref(false);
+    const err = ref(null);
+    const q = ref('');
+    const sk = ref('name');
+    const up = ref(true);
+    const favf = ref(false);
+    const det = ref(null);
+    const cl = ref([]);
+    const sc = ref(false);
+    const favs = ref(JSON.parse(localStorage.getItem('tc_fav')||'[]'));
+    const updated = ref('');
+    watch(favs, v => localStorage.setItem('tc_fav', JSON.stringify(v)), { deep: true });
+    const cs = computed(() => new Set(cl.value.map(m => m.id)));
+    const sorts = [{k:'name',l:'Name'},{k:'input',l:'Input'},{k:'output',l:'Output'},{k:'cached',l:'Cached'},{k:'ctx',l:'Kontext'},{k:'prov',l:'Anbieter'}];
+
+    function prov(m) { const n=m.name||m.id||'',i=n.indexOf(':'); return i>0?n.slice(0,i).trim():m.id?.split('/')[0]||'—'; }
+    function pr(m,t) {
+      if(!m.pricing) return null;
+      if(t==='cached'){let r=parseFloat(m.pricing.input_cache_read);if(!isNaN(r))return r*1e6;r=parseFloat(m.pricing.input_cache_write);if(!isNaN(r))return r*1e6;return null;}
+      const r=parseFloat(m.pricing[t]);return isNaN(r)?null:r*1e6;
+    }
+    function icn(m) { const i=m.architecture?.input_modalities||[]; if(i.includes('audio'))return'🎤';if(i.includes('video'))return'🎬';if(i.includes('image'))return'🖼️';return'📝'; }
+    function tags(m) {
+      const i=m.architecture?.input_modalities||[],mod=m.architecture?.modality||'',t=[];
+      if(i.length>1||mod.includes('+'))t.push('Multimodal');else if(i.includes('image')||mod.includes('image'))t.push('Vision');else if(i.includes('audio'))t.push('Audio');else if(i.includes('video'))t.push('Video');else t.push('Text');
+      return t;
+    }
+    function pc(p) { const c=['#818cf8','#34d399','#fb7185','#fbbf24','#22d3ee','#a78bfa','#f472b6','#a3e635'];let h=0;for(let i=0;i<p.length;i++)h=((h<<5)-h)+p.charCodeAt(i);return c[Math.abs(h)%c.length]; }
+    function cls(v) { if(v==null)return'';if(v<0.5)return'p1';if(v<2)return'p2';if(v<10)return'p3';return'p4'; }
+    function fm(v) { if(v==null)return'—';if(v===0)return'$0';let s=v.toFixed(4).replace(/0+$/,'');if(s.endsWith('.'))s=s.slice(0,-1);return'$'+s; }
+    function n(nn) { if(!nn&&nn!==0)return'—';return nn.toLocaleString('de-DE'); }
+    function has(m) { return favs.value.includes(m.id); }
+    function fav(m) { const i=favs.value.indexOf(m.id);i>=0?favs.value.splice(i,1):favs.value.push(m.id); }
+    function srt(k) { if(sk.value===k)up.value=!up.value;else{sk.value=k;up.value=k==='name';} }
+
+    const show = computed(() => {
+      let l=items.value;
+      if(q.value){const s=q.value.toLowerCase();l=l.filter(m=>(m.name||'').toLowerCase().includes(s)||(m.id||'').toLowerCase().includes(s)||prov(m).toLowerCase().includes(s));}
+      if(favf.value)l=l.filter(m=>favs.value.includes(m.id));
+      return l;
+    });
+    const rows = computed(() => {
+      const l=[...show.value],f=new Set(favs.value);
+      l.sort((a,b)=>{const af=f.has(a.id)?0:1,bf=f.has(b.id)?0:1;if(af!==bf)return af-bf;let c=0;
+        switch(sk.value){
+          case'name':c=(a.name||'').localeCompare(b.name||'');break;
+          case'prov':c=prov(a).localeCompare(prov(b));break;
+          case'input':c=(pr(a,'prompt')??Infinity)-(pr(b,'prompt')??Infinity);break;
+          case'output':c=(pr(a,'completion')??Infinity)-(pr(b,'completion')??Infinity);break;
+          case'cached':c=(pr(a,'cached')??Infinity)-(pr(b,'cached')??Infinity);break;
+          case'code':c=cd(a)-cd(b);break;
+          case'ctx':c=(a.context_length??-1)-(b.context_length??-1);break;
+        }return up.value?c:-c;
+      });return l;
+    });
+    const cr = computed(() => {
+      if(!cl.value.length)return[];
+      const r=[
+        {k:'prov',i:'🏢',l:'Anbieter',c:cl.value.map(m=>prov(m))},
+        {k:'code',i:'💻',l:'Coding',c:cl.value.map(m=>'★'.repeat(cd(m))+'☆'.repeat(5-cd(m)))},
+        {k:'input',i:'📥',l:'Input / 1M',c:cl.value.map(m=>fm(pr(m,'prompt')))},
+        {k:'output',i:'📤',l:'Output / 1M',c:cl.value.map(m=>fm(pr(m,'completion')))},
+      ];
+      if(cl.value.some(m=>pr(m,'cached')))r.push({k:'cached',i:'💾',l:'Cached / 1M',c:cl.value.map(m=>pr(m,'cached')?fm(pr(m,'cached')):'—')});
+      r.push({k:'ctx',i:'📐',l:'Kontext',c:cl.value.map(m=>m.context_length?n(m.context_length)+' T':'—')});
+      r.push({k:'out',i:'📏',l:'Max Output',c:cl.value.map(m=>m.top_provider?.max_completion_tokens?n(m.top_provider.max_completion_tokens)+' T':'—')});
+      r.push({k:'arch',i:'🏗️',l:'Architektur',c:cl.value.map(m=>m.architecture?.modality||m.architecture?.model_type||'—')});
+      if(cl.value.some(m=>m.architecture?.tokenizer))r.push({k:'tok',i:'🔤',l:'Tokenizer',c:cl.value.map(m=>m.architecture?.tokenizer||'—')});
+      return r;
+    });
+    function best(rk,ci) {
+      if(!['input','output','cached'].includes(rk))return false;
+      const v=cl.value.map(m=>pr(m,rk==='input'?'prompt':rk==='output'?'completion':'cached'));
+      const vl=v.map((x,i)=>x!=null?{v:x,i}:null).filter(x=>x);if(!vl.length)return false;
+      const m=vl.reduce((a,b)=>a.v<b.v?a:b);return m.i===ci;
+    }
+    function cd(m) {
+      const d=(m.description||'').toLowerCase();const id=(m.id||'').toLowerCase();
+      if(/codestral|cursor|wizardcoder|codeqwen|starcoder|deepseek-coder|codegemma/i.test(id))return 5;
+      let s=0;
+      if(/\bcoding\b|\bcode generation\b|\bprogramming\b|\bsoftware engineer\b/i.test(d))s+=2;
+      if(/reasoning|agentic|developer|instruction|technical/i.test(d))s+=1;
+      if(/claude|gpt-4|gemini.*(?:pro|ultra|flash)|qwen.*(?:max|plus|72)|command.*plus|deepseek.*(?:v[23]|r1)/i.test(id))s+=1;
+      if(/coder|code[-_]?gen/i.test(id))s+=2;
+      return Math.min(s,5);
+    }
+    function cmp(m) {
+      if(cs.value.has(m.id)){cl.value=cl.value.filter(x=>x.id!==m.id);return;}
+      if(cl.value.length>=5)return;
+      cl.value.push(m);if(cl.value.length>=2)sc.value=true;
+    }
+    function rc(m) { cl.value=cl.value.filter(x=>x.id!==m.id);if(cl.value.length<2)sc.value=false; }
+
+    async function load() {
+      busy.value=true;err.value=null;
+      try{const r=await window.fetch('https://openrouter.ai/api/v1/models');if(!r.ok)throw new Error('HTTP '+r.status);const d=await r.json();items.value=(d.data||[]).filter(m=>m.pricing?.prompt!=null);updated.value=new Date().toLocaleString('de-DE',{dateStyle:'short',timeStyle:'medium'});}
+      catch(e){err.value='Fehler: '+e.message;}
+      finally{busy.value=false;}
+    }
+    onMounted(load);
+    return { items,busy,err,q,sk,up,favf,det,cl,sc,favs,updated,cs,sorts,prov,pr,icn,tags,pc,cls,fm,n,has,fav,srt,show,rows,cr,best,cd,cmp,rc,load };
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

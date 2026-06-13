@@ -159,13 +159,15 @@ createApp({
       return l;
     });
 
-    // Sortiert die gefilterte Liste (Favoriten werden immer oben angezeigt)
+    // Sortiert die gefilterte Liste (Favoriten nur bei Name-Sortierung bevorzugt)
     const rows = computed(() => {
       const l = [...show.value], f = new Set(favs.value);
       l.sort((a, b) => {
-        // Favoriten zuerst (0 = Favorit, 1 = kein Favorit)
-        const af = f.has(a.id) ? 0 : 1, bf = f.has(b.id) ? 0 : 1;
-        if (af !== bf) return af - bf;
+        // Favoriten nur bei Standardsortierung nach Name an den Anfang
+        if (sk.value === 'name') {
+          const af = f.has(a.id) ? 0 : 1, bf = f.has(b.id) ? 0 : 1;
+          if (af !== bf) return af - bf;
+        }
         let c = 0;
         switch (sk.value) {
           case 'name': c = (a.name || '').localeCompare(b.name || ''); break;
@@ -222,23 +224,30 @@ createApp({
     }
 
     // =========================================================================
-    // Coding-Rating (Heuristik basierend auf Modell-ID und Beschreibung)
+    // Coding-Rating (Artificial Analysis Benchmark + Kontextlänge + Heuristik)
     // =========================================================================
     function cd(m) {
+      const ctx = m.context_length || 0;
+      const ctxBonus = Math.min(1, Math.log2(Math.max(ctx, 4096) / 4096) / 10);
+
+      const aa = m.benchmarks?.artificial_analysis;
+      if (aa?.coding_index != null) {
+        let s = (aa.coding_index / 62) * 4;
+        if (aa.intelligence_index != null)
+          s = s * 0.7 + (aa.intelligence_index / 65) * 4 * 0.3;
+        return Math.min(5, Math.round(s + ctxBonus));
+      }
+
       const d = (m.description || '').toLowerCase();
       const id = (m.id || '').toLowerCase();
-      // Bekannte Code-spezifische Modelle erhalten sofort 5/5
-      if (/codestral|cursor|wizardcoder|codeqwen|starcoder|deepseek-coder|codegemma/i.test(id)) return 5;
+      if (/codestral|cursor|wizardcoder|codeqwen|starcoder|deepseek-coder|codegemma/i.test(id))
+        return Math.min(5, Math.round(4 + ctxBonus));
       let s = 0;
-      // Beschreibungs-Matches (+2 für explizite Coding-Keywords)
       if (/\bcoding\b|\bcode generation\b|\bprogramming\b|\bsoftware engineer\b/i.test(d)) s += 2;
-      // Schwächere Indikatoren (+1 für Reasoning, Developer, etc.)
       if (/reasoning|agentic|developer|instruction|technical/i.test(d)) s += 1;
-      // Hochwertige Modelle, die gut coden können (+1)
       if (/claude|gpt-4|gemini.*(?:pro|ultra|flash)|qwen.*(?:max|plus|72)|command.*plus|deepseek.*(?:v[23]|r1)/i.test(id)) s += 1;
-      // Spezifische Coder-Keywords in der ID (+2)
       if (/coder|code[-_]?gen/i.test(id)) s += 2;
-      return Math.min(s, 5);
+      return Math.min(5, Math.round(Math.min(s, 4) + ctxBonus));
     }
 
     // =========================================================================

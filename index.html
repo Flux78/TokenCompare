@@ -69,10 +69,10 @@
           <th class="th-sticky" @click="srt('name')">Modell <span v-if="sk==='name'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky hm" @click="srt('prov')">Anbieter <span v-if="sk==='prov'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky tc" @click="srt('code')">Code <span v-if="sk==='code'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
-          <th class="th-sticky tr" @click="srt('input')">Input <span style="font-size:9px;opacity:.5;">/1M</span><span v-if="sk==='input'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
-          <th class="th-sticky tr" @click="srt('output')">Output <span style="font-size:9px;opacity:.5;">/1M</span><span v-if="sk==='output'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
-          <th class="th-sticky tr hm" @click="srt('cached')">Cached <span style="font-size:9px;opacity:.5;">/1M</span><span v-if="sk==='cached'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
-          <th class="th-sticky tr hm" @click="srt('eff')">Eff. <span style="font-size:9px;opacity:.5;">/1M</span><span v-if="sk==='eff'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
+          <th class="th-sticky tr" @click="srt('input')">Input <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='input'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
+          <th class="th-sticky tr" @click="srt('output')">Output <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='output'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
+          <th class="th-sticky tr hm" @click="srt('cached')">Cached <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='cached'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
+          <th class="th-sticky tr hm" @click="srt('eff')">Eff. <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='eff'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky tr hm" @click="srt('ctx')">Kontext <span v-if="sk==='ctx'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky-right"></th>
         </tr>
@@ -101,7 +101,7 @@
           <td class="hm"><span class="provider-cell"><img v-if="provIcon(m)" :src="provIcon(m)" style="width:14px;height:14px;border-radius:2px;" @error="$event.target.style.display='none'"><span v-else class="dot" :style="'background:'+pc(prov(m))"></span>{{ prov(m) }}</span></td>
           <!-- Coding-Rating als Sterne -->
           <td class="tc">
-            <span v-if="cd(m)" :style="{color:['#475569','#a78bfa','#818cf8','#f59e0b','#f97316'][cd(m)-1],fontSize:'14px',cursor:'default'}" :title="cd(m)+'/5'">{{ '★'.repeat(cd(m)) }}</span>
+            <span v-if="cd(m)" :style="{color:['#475569','#a78bfa','#818cf8','#f59e0b','#f97316'][cd(m)-1],fontSize:'13px',cursor:'default'}" :title="cd(m)+'/5'">{{ '★'.repeat(cd(m)) }}</span>
             <span v-else class="stars-empty">—</span>
           </td>
           <!-- Preise: Input, Output, Cached, Effektiv, Kontext -->
@@ -138,7 +138,7 @@
       <div class="modal-header">
         <div style="display:flex;align-items:center;gap:6px;">
           <span>{{ icn(det) }}</span>
-          <b style="font-size:14px;">{{ det.name }}</b>
+          <b style="font-size:13px;">{{ det.name }}</b>
         </div>
         <button @click="det=null" class="modal-close-btn" title="Schließen">&times;</button>
       </div>
@@ -151,7 +151,7 @@
           <div class="detail-item"><div class="detail-label">Max Output</div><div class="detail-value">{{ det.top_provider?.max_completion_tokens?n(det.top_provider.max_completion_tokens)+' T':'—' }}</div></div>
         </div>
         <!-- Coding-Rating -->
-        <div class="detail-item" style="margin-top:4px;"><div class="detail-label">Coding</div><div style="font-weight:600;font-size:16px;">{{ '★'.repeat(cd(det))+'☆'.repeat(5-cd(det)) }}</div></div>
+        <div class="detail-item" style="margin-top:4px;"><div class="detail-label">Coding</div><div style="font-weight:600;font-size:14px;">{{ '★'.repeat(cd(det))+'☆'.repeat(5-cd(det)) }}</div></div>
         <!-- Preis-Detailübersicht -->
         <div class="detail-item-wide">
           <div class="detail-label" style="margin-bottom:6px;">Preise / 1M Tokens</div>
@@ -162,7 +162,7 @@
           </div>
           <div style="margin-top:6px;padding-top:6px;border-top:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;">
             <span class="detail-label">Effektiv ({{ mixLabel }})</span>
-            <span class="price" :class="cls(eff(det))" style="font-size:15px;">{{ fm(eff(det)) }}</span>
+            <span class="price" :class="cls(eff(det))" style="font-size:13px;">{{ fm(eff(det)) }}</span>
           </div>
         </div>
         <!-- Beschreibung des Modells -->
@@ -188,12 +188,12 @@
       <!-- Compare-Header -->
       <div class="modal-header-slim">
         <div style="display:flex;align-items:center;gap:8px;">
-          <b style="font-size:14px;">📊 Vergleich</b>
+          <b style="font-size:13px;">📊 Vergleich</b>
           <span class="compare-badge">{{ cl.length }}</span>
         </div>
         <div style="display:flex;gap:6px;">
-          <button @click="cl=[];sc=false" class="btn" style="font-size:10px;" title="Alle Modelle aus Vergleich entfernen">Reset</button>
-          <button @click="sc=false" style="font-size:10px;padding:3px 10px;border-radius:6px;background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.25);cursor:pointer;" title="Vergleich schließen">Schließen</button>
+          <button @click="cl=[];sc=false" class="btn" style="font-size:9px;" title="Alle Modelle aus Vergleich entfernen">Reset</button>
+          <button @click="sc=false" style="font-size:9px;padding:3px 10px;border-radius:6px;background:rgba(99,102,241,.1);color:#818cf8;border:1px solid rgba(99,102,241,.25);cursor:pointer;" title="Vergleich schließen">Schließen</button>
         </div>
       </div>
       <!-- Vergleichstabelle: Zeilen = Eigenschaften, Spalten = Modelle -->
@@ -202,7 +202,7 @@
           <thead><tr>
             <th class="compare-th">Eigenschaft</th>
             <th v-for="m in cl" :key="m.id" class="compare-th-model">
-              <div style="display:flex;align-items:center;gap:4px;">{{ icn(m) }}<b>{{ m.name }}</b><button @click="rc(m)" :title="m.name + ' entfernen'" style="margin-left:auto;width:14px;height:14px;border-radius:3px;background:#1e293b;color:#475569;border:none;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;">&times;</button></div>
+              <div style="display:flex;align-items:center;gap:4px;">{{ icn(m) }}<b>{{ m.name }}</b><button @click="rc(m)" :title="m.name + ' entfernen'" style="margin-left:auto;width:14px;height:14px;border-radius:3px;background:#1e293b;color:#475569;border:none;cursor:pointer;font-size:8px;display:flex;align-items:center;justify-content:center;">&times;</button></div>
             </th>
           </tr></thead>
           <tbody>
@@ -228,7 +228,7 @@
 </div>
 
 <!-- ===== FOOTER: Quellenangaben ===== -->
-<div style="margin-top:10px;padding:8px 10px;font-size:9px;color:#334155;text-align:center;line-height:1.6;border-top:1px solid #1e293b;">
+<div style="margin-top:10px;padding:8px 10px;font-size:8px;color:#334155;text-align:center;line-height:1.6;border-top:1px solid #1e293b;">
   <a href="https://vuejs.org" target="_blank" rel="noopener noreferrer" style="color:#475569;text-decoration:none;">Vue 3</a> (MIT) ·
   <a href="https://feathericons.com" target="_blank" rel="noopener noreferrer" style="color:#475569;text-decoration:none;">Feather Icons</a> (MIT) ·
   Daten: <a href="https://openrouter.ai" target="_blank" rel="noopener noreferrer" style="color:#475569;text-decoration:none;">OpenRouter API</a> ·

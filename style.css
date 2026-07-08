@@ -179,8 +179,7 @@ tr:hover td { background: rgba(99, 102, 241, 0.03); }
 .cell-center { text-align: center; }
 
 /* === STERN (Favorit) === */
-.star { cursor: pointer;   font-size: 13px;
-}
+.star { cursor: pointer; font-size: 13px; }
 .star-on { color: #facc15; }   /* Aktiv (gelb) */
 .star-off { color: #334155; }  /* Inaktiv (dunkelgrau) */
 
@@ -368,6 +367,8 @@ tr:hover td { background: rgba(99, 102, 241, 0.03); }
 
 /* Modal-Container (dunkle Karte) */
 .modal-box { background: #131821; border: 1px solid #1e293b; border-radius: 10px; }
+.modal-detail { max-width: 380px; }
+.modal-compare { max-width: 800px; }
 
 /* Zentriert das Modal auf dem Bildschirm */
 .modal-center {
@@ -579,7 +580,7 @@ tr:hover td { background: rgba(99, 102, 241, 0.03); }
   padding: 20px;
   text-align: center;
   color: #475569;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 /* Wenn keine Modelle die Filterkriterien erfüllen */
@@ -643,10 +644,10 @@ tr:hover td { background: rgba(99, 102, 241, 0.03); }
   table { font-size: 10px; }
   th { font-size: 8px; padding: 5px 6px; }
   td { padding: 4px 6px; }
-  .star { font-size: 12px; }
+  .star { font-size: 14px; display: inline-block; min-width: 22px; text-align: center; }
   .stars-empty { font-size: 8px; }
   .price-value { font-size: 9px; }
-  .compare-btn { font-size: 8px; padding: 1px 4px; }
+  .compare-btn { font-size: 9px; padding: 3px 6px; min-width: 22px; }
   .footer-bar { font-size: 8px; padding: 4px 8px; }
   .toggle-chip, .toggle-chip-curr { font-size: 7px; padding: 1px 6px; }
   .btn { font-size: 8px; padding: 3px 7px; }
@@ -667,6 +668,8 @@ tr:hover td { background: rgba(99, 102, 241, 0.03); }
   .skeleton { font-size: 11px; }
   .table-wrap { height: 58vh; }
   #app { padding: 6px 8px; }
-  .header { gap: 4px; margin-bottom: 6px; }
-  .header-start, .header-end { gap: 4px; }
+  .header { gap: 4px; margin-bottom: 6px; flex-direction: column; align-items: stretch; }
+  .header-start, .header-end { gap: 4px; justify-content: center; }
+  .badge-llm { display: none; }
+  .modal-detail, .modal-compare { max-width: calc(100vw - 24px); }
 }

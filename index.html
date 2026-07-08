@@ -133,7 +133,7 @@
 <Teleport to="body">
   <div v-if="det" class="fixed inset-0 z-50 modal-center" @click.self="det=null">
     <div class="modal-overlay fixed inset-0"></div>
-    <div class="modal-box relative" style="width:100%;max-width:380px;max-height:80vh;overflow-y:auto;">
+    <div class="modal-box relative modal-detail" style="width:100%;max-height:80vh;overflow-y:auto;">
       <!-- Detail-Header -->
       <div class="modal-header">
         <div style="display:flex;align-items:center;gap:6px;">
@@ -184,7 +184,7 @@
 <Teleport to="body">
   <div v-if="sc&&cl.length>=2" class="fixed inset-0 z-50 modal-center" @click.self="sc=false">
     <div class="modal-overlay fixed inset-0"></div>
-    <div class="modal-box relative" style="width:100%;max-width:800px;max-height:80vh;overflow-y:auto;">
+    <div class="modal-box relative modal-compare" style="width:100%;max-height:80vh;overflow-y:auto;">
       <!-- Compare-Header -->
       <div class="modal-header-slim">
         <div style="display:flex;align-items:center;gap:8px;">

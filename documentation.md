@@ -8,9 +8,10 @@ Single-Page-HTML-Anwendung – **3 Dateien** ohne Build-Tools, Bundler oder npm:
 
 | Datei | Zeilen | Aufgabe |
 |---|---|---|
-| `index.html` | 242 | Vue-Template, Komponenten-Markup |
-| `style.css` | 595 | Dark-Theme-Styling, Layout-Klassen, responsiv |
-| `app.js` | 290 | Vue 3 Logik (Composition API) |
+| `index.html` | – | Vue-Template, Komponenten-Markup, lokales Favicon eingebunden |
+| `style.css` | – | Dark-Theme-Styling, Layout-Klassen, responsiv |
+| `app.js` | – | Vue 3 Logik (Composition API) |
+| `favicon.svg` | – | Lokales Browser-/Tab-Icon |
 
 | Technologie | Verwendung |
 |---|---|
@@ -21,14 +22,15 @@ Single-Page-HTML-Anwendung – **3 Dateien** ohne Build-Tools, Bundler oder npm:
 
 ## Features
 
-- **Live-Daten** von OpenRouter (350+ Modelle) mit Update-Button
-- **Sortierbare Tabelle**: Name, Anbieter, Code-Rating, Input/Output/Cached/Effektiv-Preise, Kontext
-- **Suche** über Modellname, ID oder Anbieter (eigene Zeile, keine Überlappung)
+- **Live-Daten** aus dem vollständigen OpenRouter-Modellkatalog; Modelle ohne Preis bleiben sichtbar
+- **Sortierbare Tabelle**: Name, Anbieter, Coding-Einschätzung, Input/Output/Cached/Effektiv-Preise, Kontext
+- **Suche** über Modellname, ID, Beschreibung oder Anbieter (eigene Zeile, keine Überlappung)
 - **Favoriten**: Stern-Markierung persistent in localStorage, Favoriten immer oben
-- **Favoriten-Filter**: Nur Favoriten anzeigen
+- **Favoriten-Filter**: Nur Favoriten anzeigen; bei Namenssortierung stehen Favoriten oben
 - **Sortier-Chips**: Schnell zwischen Sortierungen wechseln
-- **Code-Rating (0–5★)**: Heuristische Bewertung der Coding-Eignung aus Modellname und Beschreibung
-- **Detail-Modal**: Klick auf Zeile zeigt Anbieter, Modus, Kontext, Max Output, Preise, Coding-Rating, Beschreibung
+- **Coding-Einschätzung**: Artificial Analysis Coding Index, sonst grobe Metadaten-Schätzung oder „Keine Daten“ mit sichtbarer Einordnung
+- **Preisfilter**: Modelle ohne Input-Preis optional ausblenden
+- **Detail-Modal**: Klick auf Zeile zeigt Anbieter, Modus, Kontext, Max Output, Preise, Coding-Einschätzung, Beschreibung und optional die vollständigen API-Daten des Modells
 - **Compare-Modal**: Bis zu 5 Modelle vergleichen (Preise, Kontext, Architektur, etc.), günstigster Preis grün markiert
 - **Responsive**: Auf schmalen Bildschirmen werden Anbieter-, Cached- und Kontext-Spalten ausgeblendet
 - **Effektiv-Preis**: Gewichteter Mischpreis aus Input/Output/Cached (umstellbar 70/30 Chat oder 60/25/15 Cache) als zusätzliche Tabellenspalte und im Detail-Modal
@@ -42,21 +44,21 @@ TokenCompare multipliziert alle Werte mit **1.000.000** → Anzeige als **$ / 1M
 
 - `prompt` → Input-Preis
 - `completion` → Output-Preis
-- `input_cache_read` / `input_cache_write` → Cached-Preis
-- Alle Werte via `parseFloat` + `* 1e6`
+- `input_cache_read` → Cache-Read-Preis
+- `input_cache_write` → Cache-Write-Preis (separat angezeigt, nicht als Read-Preis ausgegeben)
+- Alle vorhandenen Werte werden numerisch validiert und mit `* 1e6` umgerechnet
 
-## Code-Rating Heuristik
+## Coding-Einschätzung
 
-Die `cd(m)`-Funktion analysiert `m.description` und `m.id`:
+`coding(m)` liefert Anzeigewert, Typ und Erklärung:
 
-| Stufe | Kriterium |
-|---|---|
-| **5★** | ID enthält `codestral`, `cursor`, `wizardcoder`, `deepseek-coder`, `codegemma`, `starcoder`, `codeqwen` |
-| **+2** | Beschreibung enthält "coding", "code generation", "programming", "software engineer" |
-| **+1** | Beschreibung enthält "reasoning", "agentic", "developer", "instruction", "technical" |
-| **+1** | ID enthält Claude, GPT-4, Gemini Pro/Ultra/Flash, Qwen Max/Plus/72B, Command R+, DeepSeek V2/V3/R1 |
-| **0★** | Keine Coding-Hinweise gefunden |
-| *Gedeckelt auf 5* | |
+| Anzeige | Grundlage | Aussagekraft |
+|---|---|---|
+| `AA <Wert>` | `benchmarks.artificial_analysis.coding_index` aus den OpenRouter-Modellmetadaten | Externer Coding-Index, unverändert angezeigt und nicht in Sterne umgerechnet |
+| Coding-Hinweis | Explizite Coding-Hinweise im Modellnamen oder in der Beschreibung | Metadaten-Signal, ausdrücklich keine Leistungsnote oder Leistungsprognose |
+| `Keine Daten` | Kein Coding-Index und keine konkreten Coding-Hinweise | Unbekannt, ausdrücklich nicht als 0 bewertet |
+
+Kontextlänge und allgemeine Intelligence-Indizes fließen nicht in die Coding-Einschätzung ein. Bei der Sortierung stehen Benchmarkwerte vor Metadaten-Hinweisen; unbekannte Werte bleiben am Ende. Es wird bewusst keine nicht belegte 0–5-Note erzeugt.
 
 ## Datenmodell (OpenRouter API)
 
@@ -67,10 +69,10 @@ Relevante Felder aus der API-Antwort:
 | `id` | string | Eindeutige ID, z. B. `openai/gpt-4o` |
 | `name` | string | Anzeigename, Format: `"Anbieter: Modellname"` |
 | `description` | string | Beschreibung (für Coding-Rating und Detail-Modal) |
-| `pricing.prompt` | string | Input-Preis pro Token |
+| `pricing.prompt` | string | Input-Preis pro Token (optional) |
 | `pricing.completion` | string | Output-Preis pro Token |
-| `pricing.input_cache_read` | string | Gecachter Input-Preis pro Token (optional) |
-| `pricing.input_cache_write` | string | Alternativer Cache-Preis (optional) |
+| `pricing.input_cache_read` | string | Cache-Read-Preis pro Token (optional) |
+| `pricing.input_cache_write` | string | Cache-Write-Preis pro Token (optional) |
 | `context_length` | number | Kontextfenster in Tokens |
 | `architecture.modality` | string | z. B. `"text+image"` |
 | `architecture.input_modalities` | string[] | `["text"]`, `["text","image"]`, etc. |
@@ -81,11 +83,14 @@ Relevante Felder aus der API-Antwort:
 - **Provider-Extraktion**: `m.name` bei erstem Doppelpunkt splitten → "Anbieter: Modellname"
 - **Kein `fetch`-Shadowing**: Die globale `fetch`-Funktion wird nicht überschrieben; der API-Call nutzt `window.fetch()`
 - **Tabelle in 68vh-Container**: Haupttabelle in einem Bereich mit `height:68vh` und `overflow-y:auto`, Header sticky, Footer-Leiste fest am unteren Rand
-- **Favoriten immer oben**: Zweistufige Sortierung (Favoriten zuerst, dann gewählte Sortierung)
+- **Favoriten oben**: Bei Namenssortierung werden Favoriten zuerst angezeigt
 - **Compare-Modal**: Nur bei `>=2` ausgewählten Modellen sichtbar, max. 5 Modelle
-- **Preisformatierung**: `fm()` nutzt `toFixed(4)` mit Abschneiden überflüssiger Nullen, z. B. `$0.1500` → `$0.15`
+- **Preisformatierung**: Deutsche Zahlendarstellung mit bis zu 8 Nachkommastellen; gültige Nullpreise bleiben sichtbar
 - **Datei-Aufteilung**: `index.html` enthält nur das Template, `style.css` alle Styles, `app.js` die Vue-Logik – geladen über `<link>` bzw. `<script src="...">`
-- **Effektiv-Preis**: `eff(m)` berechnet gewichteten Mischpreis nach Modus (70% Input + 30% Output oder 60% Input + 25% Output + 15% Cached), umschaltbar per Knopf im Header
+- **Vollständiger Katalog**: Alle API-Modelle mit gültiger ID bleiben erhalten. Ein optionaler Filter blendet Modelle ohne Input-Preis aus.
+- **Effektiv-Preis**: 70/30 nur mit Input- und Output-Preis; 60/25/15 nur, wenn zusätzlich ein Cache-Read-Preis vorhanden ist. Fehlende Angaben werden nicht als 0 angesetzt.
+- **Aktualisierung**: API-Daten werden ohne Browser-Cache geladen; Anfrage mit 15-Sekunden-Timeout und Validierung der Antwort.
+- **Icon**: `favicon.svg` wird lokal ausgeliefert.
 
 ## Sicherheit
 

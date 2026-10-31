@@ -8,13 +8,14 @@
 
 ## Features
 
-- **Live-Daten** von OpenRouter (350+ Modelle) mit einem Klick aktualisierbar
-- **Sortierbare Tabelle** nach Name, Anbieter, Input/Output/Cached/Effektiv-Preis, Kontext, Code-Rating
-- **Suche** über Modellname, ID oder Anbieter
-- **Favoriten** – Sterne-Markierung, persistent in `localStorage`, Favoriten immer oben
+- **Live-Daten** aus dem vollständigen OpenRouter-Modellkatalog; Modelle ohne Preis bleiben sichtbar
+- **Sortierbare Tabelle** nach Name, Anbieter, Coding-Einschätzung, Input/Output/Cached/Effektiv-Preis und Kontext
+- **Suche** über Modellname, ID, Beschreibung oder Anbieter
+- **Preisfilter** zum optionalen Ausblenden von Modellen ohne Input-Preis
+- **Favoriten** – Sterne-Markierung, persistent in `localStorage`, bei Namenssortierung oben
 - **Favoriten-Filter** – nur Favoriten anzeigen
-- **Code-Rating (0–5★)** – Heuristische Bewertung der Coding-Eignung aus Name und Beschreibung
-- **Detail-Modal** – Klick auf ein Modell zeigt Anbieter, Preise, Kontext, Architektur, Beschreibung, Coding-Rating
+- **Coding-Einschätzung** – Artificial Analysis Coding Index, wenn verfügbar; sonst Coding-Metadaten-Hinweis oder „Keine Daten“ (ohne erfundene Leistungsnote)
+- **Detail-Modal** – zeigt Anbieter, Preise, Kontext, Coding-Einschätzung und aufklappbar die vollständigen geladenen API-Daten
 - **Compare-Modal** – Bis zu 5 Modelle side-by-side vergleichen; günstigster Preis grün markiert
 - **Effektiv-Preis** – Gewichteter Mischpreis (Chat 70/30 oder Cache 60/25/15), umschaltbar
 - **Währungsumschaltung** USD/EUR mit Live-Wechselkurs
@@ -24,7 +25,7 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/benutzer/TokenCompare.git
+git clone https://github.com/Flux78/TokenCompare.git
 cd TokenCompare
 ./start.sh
 # → http://localhost:8080
@@ -47,14 +48,16 @@ Keine Build-Tools, kein `npm install` – öffnen und loslegen.
 | [OpenRouter API](https://openrouter.ai/) | Modell- und Preisdaten | – |
 | [open.er-api.com](https://open.er-api.com/) | EUR/USD-Wechselkurs | – |
 | [Google Favicons](https://www.google.com/s2/favicons) | Provider-Favicons | – |
+| `favicon.svg` | Lokales App-Icon | – |
 
 ## Projektstruktur
 
 ```
 TokenCompare/
-├── index.html      # Vue 3 Template + HTML-Struktur (242 Zeilen)
-├── style.css       # Dark-Theme-Styling, responsiv (595 Zeilen)
-├── app.js          # Vue Composition API – gesamte Anwendungslogik (290 Zeilen)
+├── index.html      # Vue 3 Template + HTML-Struktur
+├── style.css       # Dark-Theme-Styling, responsiv
+├── app.js          # Vue Composition API – Anwendungslogik
+├── favicon.svg     # Lokales Browser-/Tab-Icon
 ├── start.sh        # Lokaler Entwicklungsserver
 ├── README.md       # Diese Datei
 └── documentation.md# Detaillierte Architekturdokumentation
@@ -68,12 +71,19 @@ Relevante API-Felder:
 |---|---|
 | `id` | Eindeutige ID, z. B. `openai/gpt-4o` |
 | `name` | Anzeigename (`"Anbieter: Modellname"`) |
-| `pricing` | Objekt mit `prompt`, `completion`, `input_cache_read` (per Token) |
+| `pricing` | Objekt mit `prompt`, `completion`, `input_cache_read` und `input_cache_write` (per Token, optional) |
 | `context_length` | Kontextfenster in Tokens |
 | `architecture.modality` | Modalität (z. B. `"text+image"`) |
 | `top_provider.max_completion_tokens` | Maximale Output-Tokens |
 
-Alle Preise werden von Per-Token-Werten auf **/1M Tokens** umgerechnet (`parseFloat` × 1.000.000).
+Alle Preise werden von Per-Token-Werten auf **/1M Tokens** umgerechnet. Cache-Read und Cache-Write werden getrennt dargestellt. Fehlende Preise bleiben leer und gehen nicht als 0 in Mischpreise ein.
+
+## Coding-Einschätzung
+
+- Ein verfügbarer `benchmarks.artificial_analysis.coding_index` wird als **unveränderter Indexwert** angezeigt, nicht in Sterne umgerechnet oder mit Kontextlänge bzw. allgemeiner Intelligenz vermischt.
+- Fehlt der Benchmark, werden konkrete Coding-Hinweise aus Modellname oder Beschreibung angezeigt – ausdrücklich **ohne erfundene Leistungsnote**.
+- Fehlen auch solche Hinweise, steht **„Keine Daten“**. Das ist bewusst keine Nullbewertung.
+- Ein Tooltip und die Modelldetails kennzeichnen Quelle und Aussagekraft. Die Metadaten-Schätzung ist keine belastbare Leistungsprognose.
 
 ## Lizenz
 

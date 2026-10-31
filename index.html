@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#0f1319">
+<meta name="description" content="LLM-Modelle, Tokenpreise und Coding-Einschätzungen vergleichen.">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://www.google.com https://*.gstatic.com; connect-src https://openrouter.ai https://open.er-api.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'">
 <title>TokenCompare</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,8 +25,8 @@
     <button @click="toggleMix" :title="'Gewichtung: ' + mixName" class="toggle-chip">
       {{ mixLabel }}
     </button>
-    <button @click="toggleCur" :title="cur === 'EUR' ? 'Auf USD umschalten' : 'Auf EUR umschalten'" class="toggle-chip-curr">
-      {{ cur === 'EUR' ? '€' : '$' }}
+    <button @click="toggleCur" :title="cur === 'EUR' ? 'Auf USD umschalten' : rate == null ? 'Wechselkurs wird geladen oder ist nicht verfügbar' : 'Auf EUR umschalten'" class="toggle-chip-curr">
+      {{ cur === 'EUR' ? (rate == null ? '€…' : '€') : '$' }}
     </button>
     <button @click="load" :disabled="busy" class="btn" title="Preise von OpenRouter neu laden">{{ busy?'…':'⟳ Update' }}</button>
   </div>
@@ -33,13 +36,14 @@
 <div class="search-section">
   <div class="srch">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-    <input v-model="q" placeholder="Suche Modell / Anbieter…">
+    <input v-model="q" placeholder="Suche Modell, Anbieter oder Beschreibung…">
   </div>
   <div class="chips-row">
     <button v-for="o in sorts" :key="o.k" @click="srt(o.k)" :class="['chip', sk===o.k?'chip-a':'']" :title="'Nach ' + o.l + ' sortieren'">
       <span v-if="sk===o.k" class="sort-arrow">{{ up?'↑':'↓' }}</span>{{ o.l }}
     </button>
     <button @click="favf=!favf" :class="['chip', favf?'chip-f':'']" :title="favf ? 'Favoriten-Filter deaktivieren' : 'Nur Favoriten anzeigen'">★ {{ favs.length }}</button>
+    <button @click="pricedf=!pricedf" :class="['chip', pricedf?'chip-a':'']" :title="pricedf ? 'Auch Modelle ohne Preis anzeigen' : 'Nur Modelle mit Input-Preis anzeigen'">{{ pricedf ? 'Mit Preis ✓' : 'Nur mit Preis' }}</button>
   </div>
 </div>
 
@@ -55,7 +59,7 @@
 <!-- ===== LEERER ZUSTAND (keine Treffer nach Filterung) ===== -->
 <div v-else-if="!busy && !rows.length" class="empty-state">
   <p>Keine Treffer</p>
-  <button @click="q='';favf=false" class="btn" style="margin-top:8px;" title="Suche und Filter zurücksetzen">Reset</button>
+  <button @click="q='';favf=false;pricedf=false" class="btn" style="margin-top:8px;" title="Suche und Filter zurücksetzen">Reset</button>
 </div>
 
 <!-- ===== MODELL-TABELLE ===== -->
@@ -68,10 +72,10 @@
           <th class="th-sticky-center" @click="srt('name')">#</th>
           <th class="th-sticky" @click="srt('name')">Modell <span v-if="sk==='name'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky hm" @click="srt('prov')">Anbieter <span v-if="sk==='prov'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
-          <th class="th-sticky tc" @click="srt('code')">Code <span v-if="sk==='code'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
+          <th class="th-sticky tc" @click="srt('code')" title="Benchmarkwerte und Schätzungen getrennt sortieren">Coding <span v-if="sk==='code'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky tr" @click="srt('input')">Input <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='input'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky tr" @click="srt('output')">Output <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='output'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
-          <th class="th-sticky tr hm" @click="srt('cached')">Cached <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='cached'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
+          <th class="th-sticky tr hm" @click="srt('cached')" title="Preis für Cache-Reads">Cache Read <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='cached'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky tr hm" @click="srt('eff')">Eff. <span style="font-size:8px;opacity:.5;">/1M</span><span v-if="sk==='eff'" class="sort-arrow"> {{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky tr hm" @click="srt('ctx')">Kontext <span v-if="sk==='ctx'" class="sort-arrow">{{ up?'↑':'↓' }}</span></th>
           <th class="th-sticky-right"></th>
@@ -101,13 +105,12 @@
           <td class="hm"><span class="provider-cell"><img v-if="provIcon(m)" :src="provIcon(m)" style="width:14px;height:14px;border-radius:2px;" @error="$event.target.style.display='none'"><span v-else class="dot" :style="'background:'+pc(prov(m))"></span>{{ prov(m) }}</span></td>
           <!-- Coding-Rating als Sterne -->
           <td class="tc">
-            <span v-if="cd(m)" :style="{color:['#475569','#a78bfa','#818cf8','#f59e0b','#f97316'][cd(m)-1],fontSize:'13px',cursor:'default'}" :title="cd(m)+'/5'">{{ '★'.repeat(cd(m)) }}</span>
-            <span v-else class="stars-empty">—</span>
+            <span class="coding-rating" :class="'coding-'+coding(m).kind" :title="coding(m).title">{{ coding(m).label }}</span>
           </td>
           <!-- Preise: Input, Output, Cached, Effektiv, Kontext -->
           <td class="tr"><span class="price" :class="cls(pr(m,'prompt'))">{{ fm(pr(m,'prompt')) }}</span></td>
           <td class="tr"><span class="price" :class="cls(pr(m,'completion'))">{{ fm(pr(m,'completion')) }}</span></td>
-          <td class="tr hm"><span v-if="pr(m,'cached')" class="price" :class="cls(pr(m,'cached'))">{{ fm(pr(m,'cached')) }}</span><span v-else style="color:#334155;">—</span></td>
+          <td class="tr hm"><span v-if="pr(m,'cached') != null" class="price" :class="cls(pr(m,'cached'))">{{ fm(pr(m,'cached')) }}</span><span v-else style="color:#334155;">—</span></td>
           <td class="tr hm"><span class="price" :class="cls(eff(m))">{{ fm(eff(m)) }}</span></td>
           <td class="tr hm"><span class="price-value">{{ m.context_length?n(m.context_length):'—' }}</span></td>
           <!-- Compare-Button (+ / ✓) -->
@@ -133,7 +136,7 @@
 <Teleport to="body">
   <div v-if="det" class="fixed inset-0 z-50 modal-center" @click.self="det=null">
     <div class="modal-overlay fixed inset-0"></div>
-    <div class="modal-box relative modal-detail" style="width:100%;max-height:80vh;overflow-y:auto;">
+    <div class="modal-box relative modal-detail" role="dialog" aria-modal="true" aria-label="Modelldetails" style="width:100%;max-height:80vh;overflow-y:auto;">
       <!-- Detail-Header -->
       <div class="modal-header">
         <div style="display:flex;align-items:center;gap:6px;">
@@ -151,14 +154,19 @@
           <div class="detail-item"><div class="detail-label">Max Output</div><div class="detail-value">{{ det.top_provider?.max_completion_tokens?n(det.top_provider.max_completion_tokens)+' T':'—' }}</div></div>
         </div>
         <!-- Coding-Rating -->
-        <div class="detail-item" style="margin-top:4px;"><div class="detail-label">Coding</div><div style="font-weight:600;font-size:14px;">{{ '★'.repeat(cd(det))+'☆'.repeat(5-cd(det)) }}</div></div>
+        <div class="detail-item" style="margin-top:4px;">
+          <div class="detail-label">Coding-Einschätzung</div>
+          <div class="coding-rating detail-rating" :class="'coding-'+coding(det).kind" :title="coding(det).title">{{ coding(det).label }}</div>
+          <div class="rating-note">{{ coding(det).kind === 'benchmark' ? 'OpenRouter-Metadaten · Artificial Analysis Coding Index' : coding(det).kind === 'estimate' ? 'Metadaten-Hinweis, keine benchmark-basierte Leistungsbewertung.' : 'Keine belastbaren Coding-Daten verfügbar.' }}</div>
+        </div>
         <!-- Preis-Detailübersicht -->
         <div class="detail-item-wide">
           <div class="detail-label" style="margin-bottom:6px;">Preise / 1M Tokens</div>
           <div class="price-grid">
-            <div><div class="price-label">Input</div><div class="price-number" :style="pr(det,'prompt')?{color:'#34d399'}:{color:'#334155'}">{{ fm(pr(det,'prompt')) }}</div></div>
-            <div><div class="price-label">Output</div><div class="price-number" :style="pr(det,'completion')?{color:'#fbbf24'}:{color:'#334155'}">{{ fm(pr(det,'completion')) }}</div></div>
-            <div><div class="price-label">Cached</div><div class="price-number" :style="pr(det,'cached')?{color:'#22d3ee'}:{color:'#334155'}">{{ pr(det,'cached')?fm(pr(det,'cached')):'—' }}</div></div>
+            <div><div class="price-label">Input</div><div class="price-number" :style="pr(det,'prompt') != null?{color:'#34d399'}:{color:'#334155'}">{{ fm(pr(det,'prompt')) }}</div></div>
+            <div><div class="price-label">Output</div><div class="price-number" :style="pr(det,'completion') != null?{color:'#fbbf24'}:{color:'#334155'}">{{ fm(pr(det,'completion')) }}</div></div>
+            <div><div class="price-label">Cache Read</div><div class="price-number" :style="pr(det,'cached') != null?{color:'#22d3ee'}:{color:'#334155'}">{{ fm(pr(det,'cached')) }}</div></div>
+            <div><div class="price-label">Cache Write</div><div class="price-number" :style="pr(det,'cacheWrite') != null?{color:'#22d3ee'}:{color:'#334155'}">{{ fm(pr(det,'cacheWrite')) }}</div></div>
           </div>
           <div style="margin-top:6px;padding-top:6px;border-top:1px solid #1e293b;display:flex;justify-content:space-between;align-items:center;">
             <span class="detail-label">Effektiv ({{ mixLabel }})</span>
@@ -170,6 +178,10 @@
           <div class="detail-label" style="margin-bottom:4px;">Beschreibung</div>
           <p class="desc-text">{{ det.description }}</p>
         </div>
+        <details class="detail-item-wide raw-details">
+          <summary>Alle geladenen API-Daten</summary>
+          <pre class="raw-json">{{ raw(det) }}</pre>
+        </details>
         <!-- Aktionen im Detail-Modal -->
         <div class="modal-actions">
           <button @click="fav(det);det=null" class="action-btn" :title="has(det) ? 'Von Favoriten entfernen' : 'Zu Favoriten hinzufügen'" :style="has(det)?{background:'#2e2a10',color:'#facc15',borderColor:'#4a4418'}:{background:'#1e293b',color:'#94a3b8',borderColor:'#1e293b'}">{{ has(det)?'★ Entfernen':'☆ Favorit' }}</button>
@@ -184,7 +196,7 @@
 <Teleport to="body">
   <div v-if="sc&&cl.length>=2" class="fixed inset-0 z-50 modal-center" @click.self="sc=false">
     <div class="modal-overlay fixed inset-0"></div>
-    <div class="modal-box relative modal-compare" style="width:100%;max-height:80vh;overflow-y:auto;">
+    <div class="modal-box relative modal-compare" role="dialog" aria-modal="true" aria-label="Modellvergleich" style="width:100%;max-height:80vh;overflow-y:auto;">
       <!-- Compare-Header -->
       <div class="modal-header-slim">
         <div style="display:flex;align-items:center;gap:8px;">
